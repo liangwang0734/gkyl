@@ -32,6 +32,8 @@ extern "C" {
 
     /* Method to update fluids and flield using explicit RK3 method */
     void gkylMomentSrcRk3(MomentSrcData_t *sd, FluidData_t *fd, double dt, double **f, double *em, double *staticEm, double *sigma, double *auxSrc);
+    /* Method to update axisymmetric (r, z) fluids and flield using explicit RK3 method */
+    void gkylMomentSrcAxisym(MomentSrcData_t *sd, FluidData_t *fd, double dt, double **f, double *em, double *staticEm, double *sigma, double *auxSrc, double *xc);
     /* Method to update fluids and flield using time-centered implicit method */
     void gkylMomentSrcTimeCentered(MomentSrcData_t *sd, FluidData_t *fd, double dt, double **f, double *em, double *staticEm, double *sigma, double *auxSrc);
     /* Method to update fluids and flield using time-centered implicit method in the exact form */

@@ -48,6 +48,7 @@ typedef struct {
 } MomentSrcData_t;
 
   void gkylFiveMomentSrcRk3(MomentSrcData_t *sd, FluidData_t *fd, double dt, double **f, double *em, double *staticEm, double *sigma, double *auxSrc);
+  void gkylMomentSrcAxisym(MomentSrcData_t *sd, FluidData_t *fd, double dt, double **f, double *em, double *staticEm, double *sigma, double *auxSrc);
   void gkylFiveMomentSrcTimeCentered(MomentSrcData_t *sd, FluidData_t *fd, double dt, double **f, double *em, double *staticEm, double *sigma, double *auxSrc);
   void gkylFiveMomentSrcTimeCenteredDirect(MomentSrcData_t *sd, FluidData_t *fd, double dt, double **f, double *em, double *staticEm, double *sigma, double *auxSrc);
   void gkylFiveMomentSrcTimeCenteredDirect2(MomentSrcData_t *sd, FluidData_t *fd, double dt, double **f, double *em, double *staticEm, double *sigma, double *auxSrc);
@@ -79,6 +80,11 @@ typedef struct {
 -- Explicit, SSP RK3 scheme
 local function updateSrcRk3(self, dt, fPtr, emPtr, staticEmPtr, sigmaPtr, auxSrc)
    ffi.C.gkylFiveMomentSrcRk3(self._sd, self._fd, dt, fPtr, emPtr, staticEmPtr, sigmaPtr, auxSrc)
+end
+
+-- Explicit, SSP RK3 scheme, axisymmetric in (r, z) coordinates
+local function updateSrcAxisym(self, dt, fPtr, emPtr, staticEmPtr, sigmaPtr, auxSrc)
+   ffi.C.gkylFiveMomentSrcAxisym(self._sd, self._fd, dt, fPtr, emPtr, staticEmPtr, sigmaPtr, auxSrc)
 end
 
 -- Use an explicit scheme to update momentum and electric field: this
@@ -170,6 +176,8 @@ function FiveMomentSrc:init(tbl)
    self._updateSrc = nil
    if scheme == "ssp-rk3" then
       self._updateSrc = updateSrcRk3
+   elseif scheme == "asixymmetric" then
+      self._updateSrc = updateSrcAxisym
    elseif scheme == "modified-boris" then
       self._updateSrc = updateSrcModBoris
    elseif scheme == "time-centered" then
@@ -325,7 +333,7 @@ function FiveMomentSrc:_advanceDispatch(tCurr, inFld, outFld, target)
          end
 
          -- update sources
-         self._updateSrc(self, dt, fDp, emDp, staticEmDp, sigmaDp, auxSrcDp)
+         self._updateSrc(self, dt, fDp, emDp, staticEmDp, sigmaDp, auxSrcDp, xc._cdata)
       end
 
       return true, GKYL_MAX_DOUBLE

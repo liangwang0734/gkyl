@@ -52,6 +52,13 @@ gkylFiveMomentSrcRk3(MomentSrcData_t *sd, FluidData_t *fd, double dt, double **f
 }
 
 void
+gkylFiveMomentSrcAxisym(MomentSrcData_t *sd, FluidData_t *fd, double dt, double **ff, double *em, double *staticEm, double *sigma, double *auxSrc, double *xc)
+{
+  // update momenta and E field
+  gkylMomentSrcAxisym(sd, fd, dt, ff, em, staticEm, sigma, auxSrc, xc);
+}
+
+void
 gkylFiveMomentSrcTimeCentered(MomentSrcData_t *sd, FluidData_t *fd, double dt, double **ff, double *em, double *staticEm, double *sigma, double *auxSrc)
 {
   unsigned nFluids = sd->nFluids;
