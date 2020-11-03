@@ -128,59 +128,76 @@ void
 gkylMomentSrcAxisym(MomentSrcData_t *sd, FluidData_t *fd, double dt, double **ff, double *em, double *staticEm, double *sigma, double *auxSrc, double *xc)
 {
   unsigned nFluids = sd->nFluids;
-  std::vector<double> f1(5), em1(8);
-  std::vector<double> f2(5), em2(8);
+  std::vector<double> f1(5);
+  std::vector<double> f2(5);
   double rad = std::sqrt(xc[0]*xc[0] + xc[1]*xc[1] + xc[2]*xc[2]);
-  double dt_rad = dt / rad;
+  double dt__rad = dt / rad;
 
-  em[BZ] = em[BZ] - dt_rad * em[EY];
+  em[EZ] = em[EZ] + dt__rad * em[BY];
+  em[BZ] = em[BZ] - dt__rad * em[EY];
 
   for (unsigned n=0; n<nFluids; ++n)
   {
     double *f = ff[n];
-    double gasGamma = 2;  // XXX
+    double gasGamma = 5./3.;  // XXX
 
-    //------------> RK Stage 1
-    double rho = f[RHO];
-    double u = f[MX] / rho;
-    double v = f[MY] / rho;
-    double w = f[MZ] / rho;
-    double E = f[ER];
-    double p = (gasGamma - 1) * (E - 0.5 * rho * (u*u + v*v + w*w));
+    if (true) {  // foward euler
+      double rho = f[RHO];
+      double u = f[MX] / rho;
+      double v = f[MY] / rho;
+      double w = f[MZ] / rho;
+      double E = f[ER];
+      double p = (gasGamma - 1) * (E - 0.5 * rho * (u*u + v*v + w*w));
 
-    f1[RHO] = f[RHO] - dt_rad * (rho*u);
-    f1[MX] = f[MX] - dt_rad * (rho*u*u - rho*v*v);
-    f1[MY] = f[MY] - dt_rad * (2*rho*u*v);
-    f1[MZ] = f[MZ] - dt_rad * (rho*u*w);
-    f1[ER] = f[ER] - dt_rad * (-u*(E+p));
+      f[RHO] = f[RHO] - dt__rad * (rho*u);
+      f[MX] = f[MX] - dt__rad * (rho*u*u - rho*v*v);
+      f[MY] = f[MY] - dt__rad * (2*rho*u*v);
+      f[MZ] = f[MZ] - dt__rad * (rho*u*w);
+      f[ER] = f[ER] - dt__rad * (-u*(E+p));
+    }
+    else {  // ssrk-3
+      //------------> RK Stage 1
+      double rho = f[RHO];
+      double u = f[MX] / rho;
+      double v = f[MY] / rho;
+      double w = f[MZ] / rho;
+      double E = f[ER];
+      double p = (gasGamma - 1) * (E - 0.5 * rho * (u*u + v*v + w*w));
 
-    //------------> RK Stage 2
-    rho = f1[RHO];
-    u = f1[MX] / rho;
-    v = f1[MY] / rho;
-    w = f1[MZ] / rho;
-    E = f1[ER];
-    p = (gasGamma - 1) * (E - 0.5 * rho * (u*u + v*v + w*w));
+      f1[RHO] = f[RHO] - dt__rad * (rho*u);
+      f1[MX] = f[MX] - dt__rad * (rho*u*u - rho*v*v);
+      f1[MY] = f[MY] - dt__rad * (2*rho*u*v);
+      f1[MZ] = f[MZ] - dt__rad * (rho*u*w);
+      f1[ER] = f[ER] - dt__rad * (-u*(E+p));
 
-    f2[RHO] = 0.75*f[RHO] + 0.25*(f1[RHO] - dt_rad * (rho*u));
-    f2[MX] = 0.75*f[MX] + 0.25*(f1[MX] - dt_rad * (rho*u*u - rho*v*v));
-    f2[MY] = 0.75*f[MY] + 0.25*(f1[MY] - dt_rad * (2*rho*u*v));
-    f2[MZ] = 0.75*f[MY] + 0.25*(f1[MZ] - dt_rad * (rho*u*w));
-    f2[ER] = 0.75*f[ER] + 0.25*(f1[ER] - dt_rad * (-u*(E+p)));
+      //------------> RK Stage 2
+      rho = f1[RHO];
+      u = f1[MX] / rho;
+      v = f1[MY] / rho;
+      w = f1[MZ] / rho;
+      E = f1[ER];
+      p = (gasGamma - 1) * (E - 0.5 * rho * (u*u + v*v + w*w));
 
-    //------------> RK Stage 3
-    rho = f2[RHO];
-    u = f2[MX] / rho;
-    v = f2[MY] / rho;
-    w = f2[MZ] / rho;
-    E = f2[ER];
-    p = (gasGamma - 1) * (E - 0.5 * rho * (u*u + v*v + w*w));
+      f2[RHO] = 0.75*f[RHO] + 0.25*(f1[RHO] - dt__rad * (rho*u));
+      f2[MX] = 0.75*f[MX] + 0.25*(f1[MX] - dt__rad * (rho*u*u - rho*v*v));
+      f2[MY] = 0.75*f[MY] + 0.25*(f1[MY] - dt__rad * (2*rho*u*v));
+      f2[MZ] = 0.75*f[MY] + 0.25*(f1[MZ] - dt__rad * (rho*u*w));
+      f2[ER] = 0.75*f[ER] + 0.25*(f1[ER] - dt__rad * (-u*(E+p)));
 
-    f[RHO] = (1.0/3.0)*f[RHO] + (2.0/3.0)*(f2[RHO] - dt_rad * (rho*u));
-    f[MX] = (1.0/3.0)*f[MX] + (2.0/3.0)*(f2[MX] - dt_rad * (rho*u*u - rho*v*v));
-    f[MY] = (1.0/3.0)*f[MY] + (2.0/3.0)*(f2[MY] - dt_rad * (2*rho*u*v));
-    f[MZ] = (1.0/3.0)*f[MY] + (2.0/3.0)*(f2[MZ] - dt_rad * (rho*u*w));
-    f[ER] = (1.0/3.0)*f[MY] + (2.0/3.0)*(f2[ER] - dt_rad * (-u*(E+p)));
+      //------------> RK Stage 3
+      rho = f2[RHO];
+      u = f2[MX] / rho;
+      v = f2[MY] / rho;
+      w = f2[MZ] / rho;
+      E = f2[ER];
+      p = (gasGamma - 1) * (E - 0.5 * rho * (u*u + v*v + w*w));
+
+      f[RHO] = (1.0/3.0)*f[RHO] + (2.0/3.0)*(f2[RHO] - dt__rad * (rho*u));
+      f[MX] = (1.0/3.0)*f[MX] + (2.0/3.0)*(f2[MX] - dt__rad * (rho*u*u - rho*v*v));
+      f[MY] = (1.0/3.0)*f[MY] + (2.0/3.0)*(f2[MY] - dt__rad * (2*rho*u*v));
+      f[MZ] = (1.0/3.0)*f[MY] + (2.0/3.0)*(f2[MZ] - dt__rad * (rho*u*w));
+      f[ER] = (1.0/3.0)*f[MY] + (2.0/3.0)*(f2[ER] - dt__rad * (-u*(E+p)));
+    }
   }
 }
 
