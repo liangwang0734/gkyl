@@ -37,6 +37,8 @@ typedef struct {
 
 typedef struct {
   int8_t nFluids; /* Number of fluids */
+  double gasGamma;
+  double mu0; /* Permeability of free space */
   double epsilon0; /* Permittivity of free space */
   double chi_e, chi_m; /* Propagation speed factor for electric field error potential */
   int8_t gravityDir; /* Direction of gravity force */
@@ -130,7 +132,10 @@ function FiveMomentSrc:init(tbl)
    assert(#tbl.charge == self._sd.nFluids, "Updater.FiveMomentSrc: Charge table must have " .. self._sd.nFluids .. " elements.")
    assert(#tbl.mass == self._sd.nFluids, "Updater.FiveMomentSrc: Mass table must have " .. self._sd.nFluids .. " elements.")
 
+   self._sd.gasGamma = tbl.gasGamma and tbl.gasGamma or 0.0
+
    self._sd.epsilon0 = assert(tbl.epsilon0, "Updater.FiveMomentSrc: Must specify 'epsilon0'")
+   self._sd.mu0 = tbl.mu0 and tbl.mu0 or 0.0
    self._sd.chi_e = tbl.elcErrorSpeedFactor and tbl.elcErrorSpeedFactor or 0.0
    self._sd.chi_m = tbl.mgnErrorSpeedFactor and tbl.mgnErrorSpeedFactor or 1.0
 
@@ -178,6 +183,8 @@ function FiveMomentSrc:init(tbl)
       self._updateSrc = updateSrcRk3
    elseif scheme == "axisymmetric" then
       self._updateSrc = updateSrcAxisym
+      assert(sd->gasGamma > 0)
+      -- FIXME check epsilon0, mu0, chi_e, chi_m?
    elseif scheme == "modified-boris" then
       self._updateSrc = updateSrcModBoris
    elseif scheme == "time-centered" then

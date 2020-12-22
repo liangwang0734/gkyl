@@ -125,40 +125,48 @@ gkylMomentSrcRk3(MomentSrcData_t *sd, FluidData_t *fd, double dt, double **ff, d
 }
 
 void
-gkylMomentSrcAxisym(MomentSrcData_t *sd, FluidData_t *fd, double dt, double **ff, double *em, double *staticEm, double *sigma, double *auxSrc, double *xc)
+gkylMomentSrcAxisym(MomentSrcData_t *sd,
+                    FluidData_t *fd,
+                    double dt,
+                    double **fluids,
+                    double *em,
+                    double *staticEm,
+                    double *sigma,
+                    double *auxSrc,
+                    double *xc)
 {
+  double rad = xc[0];
+
   unsigned nFluids = sd->nFluids;
-  double rad = std::sqrt(xc[0]*xc[0] + xc[1]*xc[1] + xc[2]*xc[2]);
-  double dt__rad = dt / rad;
-  double gasGamma = 5./3.;  // XXX
+  double gasGamma = sd->gasGamma;
+  for (unsigned n=0; n<nFluids; ++n)
+  {
+    double *fluid = fluids[n];
+
+    double rho = fluid[RHO];
+    double u = fluid[MX] / rho;
+    double v = fluid[MY] / rho;
+    double w = fluid[MZ] / rho;
+    double E = fluid[ER];
+    double p = (gasGamma - 1) * (E - 0.5 * rho * (u*u + v*v + w*w));
+
+    fluid[RHO] -= (dt/rad) * (rho*u);
+    fluid[MX] -= (dt/rad) * (rho*u*u - rho*v*v);
+    fluid[MY] -= (dt/rad) * (2*rho*u*v);
+    fluid[MZ] -= (dt/rad) * (rho*u*w);
+    fluid[ER] -= (dt/rad) * (u*(E+p));
+  }
+
   double epsilon0 = sd->epsilon0;
-  double mu0 = 1;  // XXX sd does not have mu0
-  double c2 = 1 / epsilon0 / mu0;
+  double mu0 = sd->mu0;
+  double c2 = 1 / (epsilon0 * mu0);
   double chi_e = sd->chi_e;
   double chi_m = sd->chi_m;
 
-  em[EZ] = em[EZ] + dt__rad * c2 * em[BY];
-  em[BZ] = em[BZ] - dt__rad * em[EY];
-  em[PHIE] = em[PHIE] - dt__rad * chi_e *em[EX];
-  em[PHIM] = em[PHIM] - dt__rad * chi_m * c2 *em[EX];
-
-  for (unsigned n=0; n<nFluids; ++n)
-  {
-    double *f = ff[n];
-
-    double rho = f[RHO];
-    double u = f[MX] / rho;
-    double v = f[MY] / rho;
-    double w = f[MZ] / rho;
-    double E = f[ER];
-    double p = (gasGamma - 1) * (E - 0.5 * rho * (u*u + v*v + w*w));
-
-    f[RHO] = f[RHO] - dt__rad * (rho*u);
-    f[MX] = f[MX] - dt__rad * (rho*u*u - rho*v*v);
-    f[MY] = f[MY] - dt__rad * (2*rho*u*v);
-    f[MZ] = f[MZ] - dt__rad * (rho*u*w);
-    f[ER] = f[ER] - dt__rad * (-u*(E+p));
-  }
+  em[EZ] += (dt/rad) * c2 * em[BY];
+  em[BZ] -= (dt/rad) * em[EY];
+  em[PHIE] -= (dt/rad) * chi_e * em[EX];
+  em[PHIM] -= (dt/rad) * chi_m * c2 * em[BX];
 }
 
 void

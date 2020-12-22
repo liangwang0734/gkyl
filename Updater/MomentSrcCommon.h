@@ -20,6 +20,8 @@ extern "C" {
 
     typedef struct {
         int8_t nFluids; /* Number of fluids */
+        double gasGamma;
+        double mu0; /* Permeability of free space */
         double epsilon0; /* Permittivity of free space */
         double chi_e, chi_m; /* Propagation speed factor for electric field error potential */
         int8_t gravityDir; /* Direction of gravity force */
