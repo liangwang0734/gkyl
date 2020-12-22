@@ -183,8 +183,7 @@ function FiveMomentSrc:init(tbl)
       self._updateSrc = updateSrcRk3
    elseif scheme == "axisymmetric" then
       self._updateSrc = updateSrcAxisym
-      assert(sd->gasGamma > 0)
-      -- FIXME check epsilon0, mu0, chi_e, chi_m?
+      -- TODO check gasGamma, epsilon0, mu0, chi_e, chi_m?
    elseif scheme == "modified-boris" then
       self._updateSrc = updateSrcModBoris
    elseif scheme == "time-centered" then
