@@ -3,7 +3,7 @@ local Moments = require("App.PlasmaOnCartGrid").Moments()
 local Euler = require "Eq.Euler"
 
 -- basic normalizations
-gasGamma = 5./3.
+gasGamma = 1.4
 vA0 = 1.
 mu0 = 1.
 rho0 = 1.
@@ -98,7 +98,7 @@ momentApp = Moments.App {
    },
 
    field = Moments.Field {
-      epsilon0 = 1.0, mu0 = 1.0,
+      epsilon0 = epsilon0, mu0 = epsilon0,
       init = function (t, xn)
          local r, phi, z = xn[1], xn[2], xn[3]
          local Er = 0
@@ -120,6 +120,8 @@ momentApp = Moments.App {
    emSource = Moments.CollisionlessEmSource {
       species = {"elc", "ion"},
       timeStepper = "direct",
+      epsilon0 = epsilon0, mu0 = epsilon0,
+      gasGamma = gasGamma,
    },   
 }
 -- run application
