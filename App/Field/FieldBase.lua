@@ -33,7 +33,7 @@ function NoField:init(tbl)
    NoField.super.init(tbl)
 end
 function NoField:fullInit(tbl) end
-function NoField:hasEB() return false, false end
+function NoField:hasEB() return nil, nil end
 function NoField:setCfl() end
 function NoField:setIoMethod(ioMethod) end
 function NoField:setBasis(basis) end
@@ -62,9 +62,9 @@ function NoField:copyRk() end
 function NoField:combineRk() end
 
 return {
-   FieldBase     = FieldBase,
+   FieldBase         = FieldBase,
    ExternalFieldBase = ExternalFieldBase,
-   FuncFieldBase = ExternalFieldBase, -- for backwards compat
-   NoField       = NoField
+   FuncFieldBase     = ExternalFieldBase,   -- For backwards compatibility.
+   NoField           = NoField
 }
 
