@@ -4,6 +4,17 @@
 
 local Moments = require("App.PlasmaOnCartGrid").Moments()
 local Euler = require "Eq.Euler"
+local BoundaryCondition = require "Updater.BoundaryCondition"
+local Logger = require "Lib.Logger"
+
+local logger = Logger {
+   logToFile = True
+}
+
+local log = function(...)
+   logger(string.format(...))
+   logger("\n")
+end
 
 -- basic normalizations
 gasGamma = 1.4
@@ -52,9 +63,14 @@ r_out = 1.45 * l0
 Lz = 5 * l0
 Nr, Nz = 60, 300
 
--- perturbation
-kz = 2 * math.pi / Lz
-v0 = vA0 * 0.1
+de0 = di0 / math.sqrt(mi/me)
+dz = Lz / Nz
+dr = (r_out - r_inn) / Nr
+
+log("%30s = %g", "Lz/de0", Lz/de0)
+log("%30s = %g", "(r_out-r_inn)/de0", (r_out-r_inn)/de0)
+log("%30s = %g = 1/%g", "dz/de0", dz/de0, de0/dz)
+log("%30s = %g = 1/%g", "dr/de0", dr/de0, de0/dr)
 
 momentApp = Moments.App {
    logToFile = true,
@@ -67,6 +83,7 @@ momentApp = Moments.App {
    timeStepper = "fvDimSplit",
 
    periodicDirs = {2, 3},  -- periodic along phi and z
+   decompCuts = {1, 1, 4},
 
    elc = Moments.Species {
       charge = qe, mass = me,
@@ -95,7 +112,7 @@ momentApp = Moments.App {
          local r, phi, z = xn[1], xn[2], xn[3]
          local rho = rhoi0
          local vr = 0.
-         local vphi = v0 * math.sin(kz * z)
+         local vphi = 0.
          local vz = 0.
          local p = pi0
          local er = p / (gasGamma - 1.) + 0.5 * rho * (vr^2 + vphi^2 + vz^2)
