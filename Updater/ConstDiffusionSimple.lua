@@ -52,14 +52,23 @@ function ConstDiffusionSimple:_forwardEuler(tCurr, dt, inFld, outFld)
    local status = true
    local dtSuggested = GKYL_MAX_DOUBLE
 
+   local dx = {}
+   local nu_dt__dx2 = {}
+   for d = 1, ndim do
+      dx[d] = grid:dx(d)
+      nu__dx2 = nu / (dx[d]*dx[d])
+      nu_dt__dx2[d] = dt * nu__dx2
+
+      dtSuggested = math.min(dtSuggested, cfl * 0.5 / nu__dx2)
+      status = status and nu_dt__dx2[d] <= cfl * 0.5
+   end
+
+   if not status then
+      return false, dtSuggested
+   end
+
    -- accumulate changes along different directions
    for d = 1, ndim do
-      local dx = grid:dx(d)
-      local coeff = nu * dt / (dx*dx)
-
-      dtSuggested = math.min(dtSuggested, cfl * 0.5 * dx * dx / nu)
-      status = status and coeff <= 0.5
-
       local localRange = qIn:localRange()   
       for idx in localRange:rowMajorIter() do
          idx:copyInto(idxp)
@@ -76,7 +85,7 @@ function ConstDiffusionSimple:_forwardEuler(tCurr, dt, inFld, outFld)
          qOut:fill(qOutIdxr(idx), qOutPtr)
         
          for icomp, c in ipairs(comps) do  -- FIXME faster to move to inner loop?
-           qOutPtr[c] = qOutPtr[c] + coeff * (qInPtrM[c] - 2 * qInPtr[c] + qInPtrP[c])
+           qOutPtr[c] = qOutPtr[c] + nu_dt__dx2[d] * (qInPtrM[c] - 2 * qInPtr[c] + qInPtrP[c])
          end
       end
    end
