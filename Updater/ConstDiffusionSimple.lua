@@ -41,7 +41,7 @@ function ConstDiffusionSimple:_forwardEuler(tCurr, dt, inFld, outFld)
    local qOutIdxr = qOut:genIndexer()
    local idxm = Lin.IntVec(grid:ndim())
    local idxp = Lin.IntVec(grid:ndim())
-   -- movable and re-usable pointers
+   -- Movable and re-usable pointers to underlying C data.
    local qInPtr = qIn:get(1)
    local qInPtrM = qIn:get(1)
    local qInPtrP = qIn:get(1)
@@ -52,14 +52,14 @@ function ConstDiffusionSimple:_forwardEuler(tCurr, dt, inFld, outFld)
    local status = true
    local dtSuggested = GKYL_MAX_DOUBLE
 
+   -- Suggest a proper dt and quit if the dt fed in is too big.
    local dx = {}
    local nu_dt__dx2 = {}
    for d = 1, ndim do
       dx[d] = grid:dx(d)
-      nu__dx2 = nu / (dx[d]*dx[d])
-      nu_dt__dx2[d] = dt * nu__dx2
+      nu_dt__dx2[d] = dt * nu / (dx[d]*dx[d])
 
-      dtSuggested = math.min(dtSuggested, cfl * 0.5 / nu__dx2)
+      dtSuggested = math.min(dtSuggested, cfl * 0.5 * (dx[d]*dx[d]) / nu)
       status = status and nu_dt__dx2[d] <= cfl * 0.5
    end
 
@@ -67,7 +67,7 @@ function ConstDiffusionSimple:_forwardEuler(tCurr, dt, inFld, outFld)
       return false, dtSuggested
    end
 
-   -- accumulate changes along different directions
+   -- Accumulate changes along different directions.
    for d = 1, ndim do
       local localRange = qIn:localRange()   
       for idx in localRange:rowMajorIter() do
@@ -84,7 +84,7 @@ function ConstDiffusionSimple:_forwardEuler(tCurr, dt, inFld, outFld)
         
          qOut:fill(qOutIdxr(idx), qOutPtr)
         
-         for icomp, c in ipairs(comps) do  -- FIXME faster to move to inner loop?
+         for icomp, c in ipairs(comps) do  -- FIXME Faster to move to inner loop?
            qOutPtr[c] = qOutPtr[c] + nu_dt__dx2[d] * (qInPtrM[c] - 2 * qInPtr[c] + qInPtrP[c])
          end
       end
