@@ -18,8 +18,23 @@ function ConstDiffusionSimple:init(tbl)
 
    self._onGrid = assert(tbl.onGrid,
       "Updater.ConstDiffusionSimple: Must provide grid object using 'onGrid'")
-   self._nu = assert(tbl.nu,
+
+   local ndim = self._onGrid:ndim()
+   self._nu = Lin.Vec(ndim)
+   local nuIn = assert(tbl.nu,
       "Updater.ConstDiffusionSimple: Must specify diffusion coefficient using 'nu'")
+   local nuInType = type(nuIn)
+   if (nuInType == "number") then
+      for d = 1, ndim do
+         self._nu[d] = nuIn
+      end
+   elseif (nuInType == "table") then
+      assert(#nuIn == ndim, "Updater.ConstDiffusionSimple: 'nu' table entry numbers does not match dimensionality.")
+      for d = 1, ndim do
+         self._nu[d] = nuIn[d]
+      end
+   end
+
    self._comps = assert(tbl.components,
       "Updater.ConstDiffusionSimple: Must specify components to work on using 'components'")
    self._cfl = tbl.cfl and tbl.cfl or 1.
@@ -55,8 +70,8 @@ function ConstDiffusionSimple:_forwardEuler(tCurr, dt, inFld, outFld)
    local nu_dt__dx2 = {}
    for d = 1, ndim do
       dx[d] = grid:dx(d)
-      nu__dx2_sum = nu__dx2_sum + nu / (dx[d]^2)
-      nu_dt__dx2[d] = dt * nu / (dx[d]^2)
+      nu__dx2_sum = nu__dx2_sum + nu[d] / (dx[d]^2)
+      nu_dt__dx2[d] = dt * nu[d] / (dx[d]^2)
    end
 
    local dtSuggested = cfl * 0.5 / nu__dx2_sum
