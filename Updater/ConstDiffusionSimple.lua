@@ -49,19 +49,18 @@ function ConstDiffusionSimple:_forwardEuler(tCurr, dt, inFld, outFld)
 
    qOut:copy(qIn)
 
-   local status = true
-   local dtSuggested = GKYL_MAX_DOUBLE
-
    -- Suggest a proper dt and quit if the dt fed in is too big.
    local dx = {}
+   local nu__dx2_sum = 0
    local nu_dt__dx2 = {}
    for d = 1, ndim do
       dx[d] = grid:dx(d)
-      nu_dt__dx2[d] = dt * nu / (dx[d]*dx[d])
-
-      dtSuggested = math.min(dtSuggested, cfl * 0.5 * (dx[d]*dx[d]) / nu)
-      status = status and nu_dt__dx2[d] <= cfl * 0.5
+      nu__dx2_sum = nu__dx2_sum + nu / (dx[d]^2)
+      nu_dt__dx2[d] = dt * nu / (dx[d]^2)
    end
+
+   local dtSuggested = cfl * 0.5 / nu__dx2_sum
+   local status = dt <= dtSuggested
 
    if not status then
       return false, dtSuggested
