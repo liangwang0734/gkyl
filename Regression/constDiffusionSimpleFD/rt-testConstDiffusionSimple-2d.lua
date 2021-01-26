@@ -1,7 +1,7 @@
 -- Gkyl ------------------------------------------------------------------------
 --
 -- Test the 2D ConstDiffusion equation object to solve a diffusion equation
---    u_t = D*u_{xx}.
+--    u_t = D_x*u_{xx}+D_y*u_{yy}.
 -- with constant diffusion coefficient D.
 --
 --    _______     ___
@@ -115,11 +115,11 @@ local qNew = createField(grid, basis)
 local qA   = createField(grid, basis)
 
 local constDiffusionSlvr = Updater.ConstDiffusionSimple {
-   onGrid     = grid,
-   basis      = basis,
-   cfl        = cflNum,
-   nu         = diffCoeff,
-   components = {1},
+   onGrid      = grid,
+   basis       = basis,
+   cfl         = cflNum,
+   coefficient = diffCoeff,
+   components  = {1},
 }
 
 local project = Updater.ProjectOnBasis {

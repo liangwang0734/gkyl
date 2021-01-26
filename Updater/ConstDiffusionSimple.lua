@@ -21,7 +21,7 @@ function ConstDiffusionSimple:init(tbl)
 
    local ndim = self._onGrid:ndim()
    self._nu = Lin.Vec(ndim)
-   local nuIn = assert(tbl.nu,
+   local nuIn = assert(tbl.coefficient,
       "Updater.ConstDiffusionSimple: Must specify diffusion coefficient using 'nu'")
    local nuInType = type(nuIn)
    if (nuInType == "number") then
