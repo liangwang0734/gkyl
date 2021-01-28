@@ -143,7 +143,9 @@ qA:write("qAnalytic_0.bp", tCurr)
 -- Function to take a single forward-euler time-step.
 local function forwardEuler(tCurr, dt, fIn, fOut)
    constDiffusionSlvr:setDtAndCflRate(dt)
+   fOut:clear(0.)
    local status, dtSuggested = constDiffusionSlvr:advance(tCurr, {fIn}, {fOut})
+   fOut:combine(dtSuggested, fOut, 1., fIn)
    fOut:sync()
    return status, dtSuggested
 end

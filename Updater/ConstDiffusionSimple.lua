@@ -42,7 +42,7 @@ end
 
 function ConstDiffusionSimple:_forwardEuler(tCurr, dt, inFld, outFld)
    local qIn = inFld[1]
-   local qOut = outFld[1]
+   local qRhsOut = outFld[1]
 
    local grid = self._onGrid
    local dt = self._dt
@@ -53,25 +53,21 @@ function ConstDiffusionSimple:_forwardEuler(tCurr, dt, inFld, outFld)
    local ndim = grid:ndim()
 
    local qInIdxr = qIn:genIndexer()
-   local qOutIdxr = qOut:genIndexer()
+   local qRhsOutIdxr = qRhsOut:genIndexer()
    local idxm = Lin.IntVec(grid:ndim())
    local idxp = Lin.IntVec(grid:ndim())
    -- Movable and re-usable pointers to underlying C data.
    local qInPtr = qIn:get(1)
    local qInPtrM = qIn:get(1)
    local qInPtrP = qIn:get(1)
-   local qOutPtr = qOut:get(1)
-
-   qOut:copy(qIn)
+   local qRhsOutPtr = qRhsOut:get(1)
 
    -- Suggest a proper dt and quit if the dt fed in is too big.
-   local dx = {}
    local nu__dx2_sum = 0
-   local nu_dt__dx2 = {}
+   local nu__dx2 = {}
    for d = 1, ndim do
-      dx[d] = grid:dx(d)
-      nu__dx2_sum = nu__dx2_sum + nu[d] / (dx[d]^2)
-      nu_dt__dx2[d] = dt * nu[d] / (dx[d]^2)
+      nu__dx2[d] = nu[d] / (grid:dx(d)^2)
+      nu__dx2_sum = nu__dx2_sum + nu__dx2[d]
    end
 
    local dtSuggested = cfl * 0.5 / nu__dx2_sum
@@ -89,17 +85,15 @@ function ConstDiffusionSimple:_forwardEuler(tCurr, dt, inFld, outFld)
          idx:copyInto(idxm)
          idxm[d] = idx[d]-1
          idxp[d] = idx[d]+1
-
-         grid:setIndex(idx)
         
          qIn:fill(qInIdxr(idx), qInPtr)
          qIn:fill(qInIdxr(idxm), qInPtrM)
          qIn:fill(qInIdxr(idxp), qInPtrP)
         
-         qOut:fill(qOutIdxr(idx), qOutPtr)
+         qRhsOut:fill(qRhsOutIdxr(idx), qRhsOutPtr)
         
-         for icomp, c in ipairs(comps) do  -- FIXME Faster to move to inner loop?
-           qOutPtr[c] = qOutPtr[c] + nu_dt__dx2[d] * (qInPtrM[c] - 2 * qInPtr[c] + qInPtrP[c])
+         for icomp, c in ipairs(comps) do
+            qRhsOutPtr[c] = qRhsOutPtr[c] + nu__dx2[d] * (qInPtrM[c] - 2 * qInPtr[c] + qInPtrP[c])
          end
       end
    end
