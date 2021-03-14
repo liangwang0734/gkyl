@@ -40,7 +40,7 @@ function ConstDiffusionSimple:init(tbl)
    self._cfl = tbl.cfl and tbl.cfl or 1.
 end
 
-function ConstDiffusionSimple:_forwardEuler(tCurr, dt, inFld, outFld)
+function ConstDiffusionSimple:_forwardEuler(self, tCurr, inFld, outFld)
    local qIn = inFld[1]
    local qRhsOut = outFld[1]
 
