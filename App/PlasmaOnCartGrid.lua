@@ -585,15 +585,24 @@ local function buildApplication(self, tbl)
       for nm, s in pairs(species) do
 	 speciesVar[nm] = s:rkStepperFields()[dataIdx]
       end
+
+      -- Use the other available copy for any intermediate calculation.
+      local bufIdx = (dataIdx==1) and 2 or 1
+      local speciesVarBuf = {}
+      for nm, s in pairs(species) do
+         speciesVarBuf[nm] = s:rkStepperFields()[bufIdx]
+      end
+
       -- Field data to operate on.
       local fieldVar = field:rkStepperFields()[dataIdx]
 
       local status, dtSuggested = true, GKYL_MAX_DOUBLE
       -- Update sources.
       for nm, s in pairs(sources) do
-	 local myStatus, myDtSuggested = s:updateSource(tCurr, dt, speciesVar, fieldVar)
-	 status =  status and myStatus
-	 dtSuggested = math.min(dtSuggested, myDtSuggested)
+         local myStatus, myDtSuggested = s:updateSource(
+            tCurr, dt, speciesVar, fieldVar, speciesVarBuf)
+         status =  status and myStatus
+         dtSuggested = math.min(dtSuggested, myDtSuggested)
       end
 
       return status, dtSuggested
