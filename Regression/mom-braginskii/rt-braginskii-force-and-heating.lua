@@ -72,7 +72,8 @@ local braginskiiForceAndHeating = Updater.BraginskiiForceAndHeating {
 local project = Updater.ProjectOnBasis {
    onGrid   = grid,
    basis    = basis,
-   evaluate = function (t, xn) return 1.0 end -- Set a dummy function for now.
+   evaluate = function (t, xn) return 1.0 end, -- Set a dummy function for now.
+   projectOnGhosts = true,
 }
 
 local elc = createField(grid, basis, 5)

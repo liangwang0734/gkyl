@@ -105,8 +105,8 @@ function BraginskiiForceAndHeating:_forwardEuler(
    for idx in localExtRange:rowMajorIter() do
       elc:fill(elcIdxr(idx), elcPtr)
       ion:fill(ionIdxr(idx), ionPtr)
-      elcBuf:fill(elcIdxr(idx), elcBufPtr)
-      ionBuf:fill(ionIdxr(idx), ionBufPtr)
+      elcBuf:fill(elcBufIdxr(idx), elcBufPtr)
+      ionBuf:fill(ionBufIdxr(idx), ionBufPtr)
 
       elcBufPtr[5] = temperature(elcPtr, gasGamma, me)
       ionBufPtr[5] = temperature(ionPtr, gasGamma, mi)

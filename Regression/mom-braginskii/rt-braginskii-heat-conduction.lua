@@ -20,8 +20,6 @@ end
 local lower        = { 1./2.,  1./2.,  1./2.}
 local upper        = {-1./2., -1./2., -1./2.}
 local cells        = {32, 32, 32}
-local cells        = {4, 4, 4}
-
 local periodicDirs = {1, 2, 3}
 
 local function initElc (t, xn)
@@ -74,7 +72,8 @@ local braginskiiHeatConduction = Updater.BraginskiiHeatConduction {
 local project = Updater.ProjectOnBasis {
    onGrid   = grid,
    basis    = basis,
-   evaluate = function (t, xn) return 1.0 end -- Set a dummy function for now.
+   evaluate = function (t, xn) return 1.0 end, -- Set a dummy function for now.
+   projectOnGhosts = true,
 }
 
 local elc = createField(grid, basis, 5)

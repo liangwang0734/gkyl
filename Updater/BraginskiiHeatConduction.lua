@@ -159,7 +159,14 @@ function BraginskiiHeatConduction:_forwardEuler(
          heatFluxPtr[2] = kappaPara*gradParaTy + kappaPerp*gradPerpTy
          heatFluxPtr[3] = kappaPara*gradParaTz + kappaPerp*gradPerpTz
       
-         if false and nFluids==2 and charge<0 then -- electron of a two-fluid plasma
+         if nFluids==2 and charge<0 then -- electron of a two-fluid plasma
+            local elcPtr = fluidPtr
+            -- FIXME: Following indexing is uglier than ugly.
+            local ion = outFld[2]
+            local ionIdxr = ion:genIndexer()
+            local ionPtr = ion:get(1)
+            ion:fill(ionIdxr(idx), ionPtr)
+
             local dVx = ionPtr[2]/ionPtr[1] - elcPtr[2]/elcPtr[1]
             local dVy = ionPtr[3]/ionPtr[1] - elcPtr[3]/elcPtr[1]
             local dVz = ionPtr[4]/ionPtr[1] - elcPtr[4]/elcPtr[1]
