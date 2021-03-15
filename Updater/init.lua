@@ -47,6 +47,7 @@ local TenMomentRelax = require "Updater.TenMomentRelax"
 local TenMomentSrc = require "Updater.TenMomentSrc"
 local ConstDiffusionSimple = require "Updater.ConstDiffusionSimple"
 local WavePropagation = require "Updater.WavePropagation"
+local BraginskiiForceHeatingTwoFluid = require "Updater.BraginskiiForceHeatingTwoFluid"
 
 return {
    Bc = Bc,
@@ -90,4 +91,5 @@ return {
    TenMomentSrc = TenMomentSrc,
    ConstDiffusionSimple = ConstDiffusionSimple,
    WavePropagation = WavePropagation,
+   BraginskiiForceHeatingTwoFluid = BraginskiiForceHeatingTwoFluid,
 }
