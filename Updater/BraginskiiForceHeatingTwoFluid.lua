@@ -20,9 +20,12 @@ function BraginskiiForceHeatingTwoFluid:init(tbl)
       "Updater.BraginskiiForceHeatingTwoFluid:" ..
       " Must provide grid object using 'onGrid'")
 
-   self._tauElc = assert(tbl.tauElectron,
+   -- Calculate tau_e with plasma parameters vs. using a preset value
+   self.calcTauElc = tbl.calcTauElectron ~= nil and tbl.calcTauElectron or false
+   self._tauElc = tbl.tauElectron
+   assert(not (type(self._tauElc)=='number' and self.calcTauElc),
       "Updater.BraginskiiForceHeatingTwoFluid:" ..
-      " Must provide 'tauElectron'.")
+      " Cannot specify 'tauElectron' and 'calcTauElectron' simultaneously")
 
    self._gasGamma = assert(tbl.gasGamma,
       "Updater.BraginskiiForceHeatingTwoFluid:" ..
@@ -67,9 +70,8 @@ function BraginskiiForceHeatingTwoFluid:_forwardEuler(
    local gasGamma = self._gasGamma
    local elcMass = self._mass[1]
    local ionMass = self._mass[2]
-   local elcCharge = self._charge[1]
-   local ionCharge = self._charge[2]
-   local epsilon0 = self.epsilon0
+   local charge = self._charge[2]
+   local epsilon0 = self._epsilon0
    local logA = self._logA
 
    local dtSuggested = GKYL_MAX_DOUBLE
@@ -162,6 +164,9 @@ function BraginskiiForceHeatingTwoFluid:_forwardEuler(
       bz = bz / bmag
 
       local nElc = elcPtr[1] / elcMass
+      local nIon = ionPtr[1] / ionMass
+      local TElc = elcBufPtr[5]
+      local TIon = ionBufPtr[5]
 
       local bDotGradTe = bx * elcBufPtr[2] + by * elcBufPtr[3] + bz * elcBufPtr[4]
       local bDotGradTi = bx * ionBufPtr[2] + by * ionBufPtr[3] + bz * ionBufPtr[4]
@@ -185,13 +190,17 @@ function BraginskiiForceHeatingTwoFluid:_forwardEuler(
 
       -- Friction force.
       local tauElc = self._tauElc
+      if self.calcTauElc then
+         tauElc = 6*math.sqrt(2)*(math.pi^1.5)* 
+                  epsilon0^2*math.sqrt(elcMass)*TElc^1.5/(logA*charge^4*nIon)
+      end
       local coeff = elcPtr[1] / tauElc
       RElcx = RElcx + coeff * (0.5 * dVparx + dVperpx)
       RElcy = RElcy + coeff * (0.5 * dVpary + dVperpy)
       RElcz = RElcz + coeff * (0.5 * dVparz + dVperpz)
 
       -- Heating.
-      local QIon = 3 * (elcMass/ionMass) * nElc * (elcBufPtr[5]-ionBufPtr[5]) / tauElc
+      local QIon = 3 * (elcMass/ionMass) * nElc * (TElc-TIon) / tauElc
       local QElc = -QIon + dVparx*RElcx + dVpary*RElcy + dVparz*RElcz
 
       -- Final updates

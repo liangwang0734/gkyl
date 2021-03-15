@@ -5,11 +5,17 @@ local Basis      = require "Basis"
 
 local gasGamma    = 5./3.
 local epsilon0    = 1.
-local tauElectron = 1.
 local elcMass     = 1.
 local ionMass     = 100.
 local ionCharge   = 1.
 local elcCharge   = -ionCharge
+
+local calcTauElectron = false
+local tauElectron = 1.
+
+if calcTauElectron then
+   tauElectron = nil
+end
 
 local lower        = { 1./2.,  1./2.,  1./2.}
 local upper        = {-1./2., -1./2., -1./2.}
@@ -55,6 +61,7 @@ end
 
 local braginskiiForceHeatingTwoFluid = Updater.BraginskiiForceHeatingTwoFluid {
    onGrid      = grid,
+   calcTauElectron = calcTauElectron,
    tauElectron = tauElectron,
    gasGamma = gasGamma,
    mass = {elcMass, ionMass},
