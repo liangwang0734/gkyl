@@ -2,6 +2,7 @@
 --
 -- Updater to apply Braginskii-like force and heating.
 --
+-- No heat conduction or viscosity.
 --    _______     ___
 -- + 6 @ |||| # P ||| +
 --------------------------------------------------------------------------------
@@ -10,51 +11,51 @@ local UpdaterBase = require "Updater.Base"
 local Lin = require "Lib.Linalg"
 local Proto = require "Lib.Proto"
 
-local BraginskiiForceHeatingTwoFluid = Proto(UpdaterBase)
+local BraginskiiForceAndHeating = Proto(UpdaterBase)
 
-function BraginskiiForceHeatingTwoFluid:init(tbl)
+function BraginskiiForceAndHeating:init(tbl)
    -- setup base object
-   BraginskiiForceHeatingTwoFluid.super.init(self, tbl)
+   BraginskiiForceAndHeating.super.init(self, tbl)
 
    self._onGrid = assert(tbl.onGrid,
-      "Updater.BraginskiiForceHeatingTwoFluid:" ..
+      "Updater.BraginskiiForceAndHeating:" ..
       " Must provide grid object using 'onGrid'")
 
    -- Calculate tau_e with plasma parameters vs. using a preset value
    self.calcTauElc = tbl.calcTauElectron ~= nil and tbl.calcTauElectron or false
    self._tauElc = tbl.tauElectron
    assert(not (type(self._tauElc)=='number' and self.calcTauElc),
-      "Updater.BraginskiiForceHeatingTwoFluid:" ..
+      "Updater.BraginskiiForceAndHeating:" ..
       " Cannot specify 'tauElectron' and 'calcTauElectron' simultaneously")
 
    self._gasGamma = assert(tbl.gasGamma,
-      "Updater.BraginskiiForceHeatingTwoFluid:" ..
+      "Updater.BraginskiiForceAndHeating:" ..
       " Must provide 'gasGamma'.")
 
    self._mass = assert(tbl.mass,
-      "Updater.BraginskiiForceHeatingTwoFluid:" ..
+      "Updater.BraginskiiForceAndHeating:" ..
       " Must provide 'mass'.")
 
    self._charge = assert(tbl.charge,
-      "Updater.BraginskiiForceHeatingTwoFluid:" ..
+      "Updater.BraginskiiForceAndHeating:" ..
       " Must provide 'charge'.")
 
    self._epsilon0 = assert(tbl.epsilon0,
-      "Updater.BraginskiiForceHeatingTwoFluid:" ..
+      "Updater.BraginskiiForceAndHeating:" ..
       " Must provide 'epsilon0'.")
 
    self._logA = tbl.coulombLogarithm and tbl.coulombLogarithm or 10
 
    assert(self._gasGamma==5./3.,
-      "Updater.BraginskiiForceHeatingTwoFluid:" ..
+      "Updater.BraginskiiForceAndHeating:" ..
       " gasGamma must be 5/3.")
 
    assert(#self._mass==2 and #self._charge==2,
-      "Updater.BraginskiiForceHeatingTwoFluid:" ..
+      "Updater.BraginskiiForceAndHeating:" ..
       " Only two-fluid electron-ion plasmas are supprted.")
 
    assert(self._charge[1]<0 and self._charge[1]==-self._charge[2],
-      "Updater.BraginskiiForceHeatingTwoFluid:" ..
+      "Updater.BraginskiiForceAndHeating:" ..
       " Electron and ion charge magnitude must equal.")
 end
 
@@ -63,7 +64,7 @@ local temperature = function (q, gasGamma, mass)
     return pr * mass / q[1]
 end
 
-function BraginskiiForceHeatingTwoFluid:_forwardEuler(
+function BraginskiiForceAndHeating:_forwardEuler(
       self, tCurr, inFld, outFld)
    local grid = self._onGrid
    local dt = self._dt
@@ -222,8 +223,8 @@ function BraginskiiForceHeatingTwoFluid:_forwardEuler(
    return status, dtSuggested
 end
 
-function BraginskiiForceHeatingTwoFluid:_advance(tCurr, inFld, outFld)
+function BraginskiiForceAndHeating:_advance(tCurr, inFld, outFld)
    return self:_forwardEuler(self, tCurr, inFld, outFld)
 end
 
-return BraginskiiForceHeatingTwoFluid
+return BraginskiiForceAndHeating

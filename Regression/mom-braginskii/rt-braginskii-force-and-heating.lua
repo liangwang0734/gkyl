@@ -59,7 +59,7 @@ local function createField(grid, basis, numComponents)
    return fld
 end
 
-local braginskiiForceHeatingTwoFluid = Updater.BraginskiiForceHeatingTwoFluid {
+local braginskiiForceAndHeating = Updater.BraginskiiForceAndHeating {
    onGrid      = grid,
    calcTauElectron = calcTauElectron,
    tauElectron = tauElectron,
@@ -99,8 +99,8 @@ emf:sync()
 
 local tCurr = tStart
 local dt = 1
-braginskiiForceHeatingTwoFluid:setDtAndCflRate(dt)
-local status, dtSuggested = braginskiiForceHeatingTwoFluid:advance(
+braginskiiForceAndHeating:setDtAndCflRate(dt)
+local status, dtSuggested = braginskiiForceAndHeating:advance(
    tCurr, {elcBuf,ionBuf}, {elc,ion,emf})
 elc:sync()
 ion:sync()
