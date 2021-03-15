@@ -57,20 +57,24 @@ function BraginskiiForceAndHeatingSource:createSolver(species, field)
 end
 
 function BraginskiiForceAndHeatingSource:updateSource(
-      tCurr, dt, speciesVar, fieldVar, speciesVarBuf, fieldVarBuf)
+      tCurr, dt, speciesVar, fieldVar, speciesBuf, fieldBuf, allSpecies)
    local tbl = self.tbl
 
    local outVars = {}
    for i, nm in ipairs(tbl.species) do
       outVars[i] = speciesVar[nm]
+
+      for d=1,self.grid:ndim() do
+         allSpecies[nm]:applyBc(tCurr, speciesVar[nm], d)
+      end
    end
    outVars[#tbl.species+1] = fieldVar
 
    local inVars = {}
    for i, nm in ipairs(tbl.species) do
-      inVars[i] = speciesVarBuf[nm]
+      inVars[i] = speciesBuf[nm]
    end
-   inVars[#tbl.species+1] = fieldVarBuf
+   inVars[#tbl.species+1] = fieldBuf
 
    self.slvr:setDtAndCflRate(dt, nil)
    return self.slvr:advance(tCurr, inVars, outVars)
