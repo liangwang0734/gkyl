@@ -61,7 +61,7 @@ end
 
 local braginskiiHeatConduction = Updater.BraginskiiHeatConduction {
    onGrid      = grid,
-   nFluids     = 2,
+   numFluids   = 2,
    tau         = {1,1},
    gasGamma = gasGamma,
    mass = {elcMass, ionMass},

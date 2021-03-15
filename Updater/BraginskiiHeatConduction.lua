@@ -21,7 +21,7 @@ function BraginskiiHeatConduction:init(tbl)
 
    self._gasGamma = assert(tbl.gasGamma, pfx .. "Must provide 'gasGamma'.")
 
-   self._nFluids = assert(tbl.nFluids, pfx .. "Must provide 'nFluids'.")
+   self._nFluids = assert(tbl.numFluids, pfx .. "Must provide 'numFluids'.")
 
    self._mass = assert(tbl.mass, pfx .. "Must provide 'mass'.")
 
