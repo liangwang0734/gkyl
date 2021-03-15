@@ -17,46 +17,34 @@ function BraginskiiForceAndHeating:init(tbl)
    -- setup base object
    BraginskiiForceAndHeating.super.init(self, tbl)
 
-   self._onGrid = assert(tbl.onGrid,
-      "Updater.BraginskiiForceAndHeating:" ..
-      " Must provide grid object using 'onGrid'")
+   local pfx = "Updater.BraginskiiForceAndHeating: "
+
+   self._onGrid = assert(tbl.onGrid, pfx.." Must provide 'onGrid'.")
 
    -- Calculate tau_e with plasma parameters vs. using a preset value
-   self.calcTauElc = tbl.calcTauElectron ~= nil and tbl.calcTauElectron or false
-   self._tauElc = tbl.tauElectron
-   assert(not (type(self._tauElc)=='number' and self.calcTauElc),
-      "Updater.BraginskiiForceAndHeating:" ..
-      " Cannot specify 'tauElectron' and 'calcTauElectron' simultaneously")
+   self._calcTauElectron = tbl.calcTauElectron ~= nil and tbl.calcTauElectron or false
+   self._tauElectron = tbl.tauElectron
+   assert(not (type(self._tauElectron)=='number' and self.calcTauElectron),
+          pfx ..  "Cannot specify 'tauElectron' and 'calcTauElectron'" ..
+          " simultaneously.")
 
-   self._gasGamma = assert(tbl.gasGamma,
-      "Updater.BraginskiiForceAndHeating:" ..
-      " Must provide 'gasGamma'.")
+   self._gasGamma = assert(tbl.gasGamma, pfx .. "Must provide 'gasGamma'.")
 
-   self._mass = assert(tbl.mass,
-      "Updater.BraginskiiForceAndHeating:" ..
-      " Must provide 'mass'.")
+   self._mass = assert(tbl.mass, pfx .. "Must provide 'mass'.")
 
-   self._charge = assert(tbl.charge,
-      "Updater.BraginskiiForceAndHeating:" ..
-      " Must provide 'charge'.")
+   self._charge = assert(tbl.charge, pfx .. "Must provide 'charge'.")
 
-   self._epsilon0 = assert(tbl.epsilon0,
-      "Updater.BraginskiiForceAndHeating:" ..
-      " Must provide 'epsilon0'.")
+   self._epsilon0 = assert(tbl.epsilon0, pfx .. "Must provide 'epsilon0'.")
 
    self._logA = tbl.coulombLogarithm and tbl.coulombLogarithm or 10
 
-   assert(self._gasGamma==5./3.,
-      "Updater.BraginskiiForceAndHeating:" ..
-      " gasGamma must be 5/3.")
+   assert(self._gasGamma==5./3., pfx .. " gasGamma must be 5/3.")
 
    assert(#self._mass==2 and #self._charge==2,
-      "Updater.BraginskiiForceAndHeating:" ..
-      " Only two-fluid electron-ion plasmas are supprted.")
+          pfx .. "Lengths of mass and charge must be 2.")
 
    assert(self._charge[1]<0 and self._charge[1]==-self._charge[2],
-      "Updater.BraginskiiForceAndHeating:" ..
-      " Electron and ion charge magnitude must equal.")
+          pfx .. "Electron and ion charge magnitude must equal.")
 end
 
 local temperature = function (q, gasGamma, mass)
@@ -69,8 +57,8 @@ function BraginskiiForceAndHeating:_forwardEuler(
    local grid = self._onGrid
    local dt = self._dt
    local gasGamma = self._gasGamma
-   local elcMass = self._mass[1]
-   local ionMass = self._mass[2]
+   local me = self._mass[1]
+   local mi = self._mass[2]
    local charge = self._charge[2]
    local epsilon0 = self._epsilon0
    local logA = self._logA
@@ -120,8 +108,8 @@ function BraginskiiForceAndHeating:_forwardEuler(
       elcBuf:fill(elcIdxr(idx), elcBufPtr)
       ionBuf:fill(ionIdxr(idx), ionBufPtr)
 
-      elcBufPtr[5] = temperature(elcPtr, gasGamma, elcMass)
-      ionBufPtr[5] = temperature(ionPtr, gasGamma, ionMass)
+      elcBufPtr[5] = temperature(elcPtr, gasGamma, me)
+      ionBufPtr[5] = temperature(ionPtr, gasGamma, mi)
    end
 
    -- Comptue grad(T) in internal cells.
@@ -164,19 +152,19 @@ function BraginskiiForceAndHeating:_forwardEuler(
       by = by / bmag
       bz = bz / bmag
 
-      local nElc = elcPtr[1] / elcMass
-      local nIon = ionPtr[1] / ionMass
-      local TElc = elcBufPtr[5]
-      local TIon = ionBufPtr[5]
+      local ne = elcPtr[1] / me
+      local ni = ionPtr[1] / mi
+      local Te = elcBufPtr[5]
+      local Ti = ionBufPtr[5]
 
-      local bDotGradTe = bx * elcBufPtr[2] + by * elcBufPtr[3] + bz * elcBufPtr[4]
-      local bDotGradTi = bx * ionBufPtr[2] + by * ionBufPtr[3] + bz * ionBufPtr[4]
+      local bDotGradTe = bx*elcBufPtr[2] + by*elcBufPtr[3] + bz*elcBufPtr[4]
+      local bDotGradTi = bx*ionBufPtr[2] + by*ionBufPtr[3] + bz*ionBufPtr[4]
 
       -- Thermal force.
       -- FIXME: Neglecting b x grad(T) force.
-      local RElcx = -0.71 * nElc * bx * bDotGradTe
-      local RElcy = -0.71 * nElc * by * bDotGradTe
-      local RElcz = -0.71 * nElc * bz * bDotGradTe
+      local Rex = -0.71 * ne * bx * bDotGradTe
+      local Rey = -0.71 * ne * by * bDotGradTe
+      local Rez = -0.71 * ne * bz * bDotGradTe
 
       local dVx = ionPtr[2]/ionPtr[1] - elcPtr[2]/elcPtr[1]
       local dVy = ionPtr[3]/ionPtr[1] - elcPtr[3]/elcPtr[1]
@@ -190,34 +178,34 @@ function BraginskiiForceAndHeating:_forwardEuler(
       local dVperpz = dVz - dVparz
 
       -- Friction force.
-      local tauElc = self._tauElc
-      if self.calcTauElc then
-         tauElc = 6*math.sqrt(2)*(math.pi^1.5)* 
-                  epsilon0^2*math.sqrt(elcMass)*TElc^1.5/(logA*charge^4*nIon)
+      local tau_e = self._tauElectron
+      if self._calcTauElectron then
+         tau_e = 6*math.sqrt(2)*(math.pi^1.5)* 
+                 epsilon0^2*math.sqrt(me)*Te^1.5/(logA*charge^4*ni)
       end
-      local coeff = elcPtr[1] / tauElc
-      RElcx = RElcx + coeff * (0.5 * dVparx + dVperpx)
-      RElcy = RElcy + coeff * (0.5 * dVpary + dVperpy)
-      RElcz = RElcz + coeff * (0.5 * dVparz + dVperpz)
+      local coeff = elcPtr[1] / tau_e
+      Rex = Rex + coeff * (0.5 * dVparx + dVperpx)
+      Rey = Rey + coeff * (0.5 * dVpary + dVperpy)
+      Rez = Rez + coeff * (0.5 * dVparz + dVperpz)
 
       -- Heating.
-      local QIon = 3 * (elcMass/ionMass) * nElc * (TElc-TIon) / tauElc
-      local QElc = -QIon + dVparx*RElcx + dVpary*RElcy + dVparz*RElcz
+      local Qi = 3 * (me/mi) * ne * (Te-Ti) / tau_e
+      local Qe = -Qi + dVparx*Rex + dVpary*Rey + dVparz*Rez
 
       -- Final updates
-      local kElcOld = 0.5 * (elcPtr[2]^2 + elcPtr[3]^2 + elcPtr[4]^2) / elcPtr[1]
-      elcPtr[2] = elcPtr[2] + RElcx
-      elcPtr[3] = elcPtr[3] + RElcy
-      elcPtr[4] = elcPtr[4] + RElcz
-      local kElcNew = 0.5 * (elcPtr[2]^2 + elcPtr[3]^2 + elcPtr[4]^2) / elcPtr[1]
-      elcPtr[5] = elcPtr[5] + kElcNew - kElcOld + QElc
+      local keOld = 0.5 * (elcPtr[2]^2 + elcPtr[3]^2 + elcPtr[4]^2) / elcPtr[1]
+      elcPtr[2] = elcPtr[2] + Rex
+      elcPtr[3] = elcPtr[3] + Rey
+      elcPtr[4] = elcPtr[4] + Rez
+      local keNew = 0.5 * (elcPtr[2]^2 + elcPtr[3]^2 + elcPtr[4]^2) / elcPtr[1]
+      elcPtr[5] = elcPtr[5] + keNew - keOld + Qe
 
-      local kIonOld = 0.5 * (ionPtr[2]^2 + ionPtr[3]^2 + ionPtr[4]^2) / ionPtr[1]
-      ionPtr[2] = ionPtr[2] - RElcx
-      ionPtr[3] = ionPtr[3] - RElcy
-      ionPtr[4] = ionPtr[4] - RElcz
-      local kIonNew = 0.5 * (ionPtr[2]^2 + ionPtr[3]^2 + ionPtr[4]^2) / ionPtr[1]
-      ionPtr[5] = ionPtr[5] + kIonNew - kIonOld + QIon
+      local kiOld = 0.5 * (ionPtr[2]^2 + ionPtr[3]^2 + ionPtr[4]^2) / ionPtr[1]
+      ionPtr[2] = ionPtr[2] - Rex
+      ionPtr[3] = ionPtr[3] - Rey
+      ionPtr[4] = ionPtr[4] - Rez
+      local kiNew = 0.5 * (ionPtr[2]^2 + ionPtr[3]^2 + ionPtr[4]^2) / ionPtr[1]
+      ionPtr[5] = ionPtr[5] + kiNew - kiOld + Qi
    end
 
    return status, dtSuggested
