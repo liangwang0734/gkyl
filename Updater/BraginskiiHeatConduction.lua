@@ -38,6 +38,8 @@ function BraginskiiHeatConduction:init(tbl)
    self._tau = tbl.tau
    assert(not (type(self._tau)=='table' and self.calcTau),
           pfx ..  "Cannot specify 'tau' and 'calcTau' simultaneously.")
+   assert(type(self._tau)=='table' or self.calcTau,
+          pfx ..  "Must specify one of 'tau' and 'calcTau'.")
 
    assert(self._gasGamma==5./3., pfx .. " gasGamma must be 5/3.")
 end

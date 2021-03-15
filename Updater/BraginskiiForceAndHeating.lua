@@ -27,6 +27,8 @@ function BraginskiiForceAndHeating:init(tbl)
    assert(not (type(self._tauElectron)=='number' and self.calcTauElectron),
           pfx ..  "Cannot specify 'tauElectron' and 'calcTauElectron'" ..
           " simultaneously.")
+   assert(type(self._tauElectron)=='number' or self.calcTauElectron,
+          pfx ..  "Must specify one of 'tauElectron' and 'calcTauElectron'.")
 
    self._gasGamma = assert(tbl.gasGamma, pfx .. "Must provide 'gasGamma'.")
 
