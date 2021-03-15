@@ -8,9 +8,11 @@
 local SourceBase = require "App.Sources.SourceBase"
 local CollisionlessEmSource = require "App.Sources.CollisionlessEmSource"
 local TenMomentRelaxSource = require "App.Sources.TenMomentRelaxSource"
+local BraginskiiHeatConductionSource = require "App.Sources.BraginskiiHeatConductionSource"
 
 return {
    SourceBase = SourceBase,
    CollisionlessEmSource = CollisionlessEmSource,
-   TenMomentRelaxSource = TenMomentRelaxSource
+   TenMomentRelaxSource = TenMomentRelaxSource,
+   BraginskiiHeatConductionSource = BraginskiiHeatConductionSource,
 }

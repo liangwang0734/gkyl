@@ -1013,6 +1013,7 @@ return {
 	 Field = require ("App.Field.MaxwellField").MaxwellField,
 	 CollisionlessEmSource = require "App.Sources.CollisionlessEmSource",
 	 TenMomentRelaxSource  = require "App.Sources.TenMomentRelaxSource",
+    BraginskiiHeatConductionSource = require "App.Sources.BraginskiiHeatConductionSource",
       }
    end
 }
