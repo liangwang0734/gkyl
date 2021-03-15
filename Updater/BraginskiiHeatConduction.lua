@@ -75,7 +75,7 @@ function BraginskiiHeatConduction:_forwardEuler(
    local heatFluxPtrM = heatFlux:get(1)
 
    -- Comptue grad_para(T) ain internal cells.
-   for s = 1, 2 do -- FIXME nFluids
+   for s = 1, nFluids do
       local fluid = outFld[s]
       local fluidIdxr = fluid:genIndexer()
       local fluidPtr = fluid:get(1)
@@ -182,7 +182,7 @@ function BraginskiiHeatConduction:_forwardEuler(
          end
       end
 
-      -- Compute div(q) and add it.
+      -- Compute div(q).
       for idx in localRange:rowMajorIter() do
          fluid:fill(fluidIdxr(idx), fluidPtr)
          fluidBuf:fill(fluidBufIdxr(idx), fluidBufPtr)
@@ -204,6 +204,25 @@ function BraginskiiHeatConduction:_forwardEuler(
          end
 
         fluidBufPtr[1] = divq
+      end
+   end
+
+   -- Add div(q) to energy.
+   for s = 1, nFluids do
+      local fluid = outFld[s]
+      local fluidIdxr = fluid:genIndexer()
+      local fluidPtr = fluid:get(1)
+
+      local fluidBuf = inFld[s]
+      local fluidBufIdxr = fluidBuf:genIndexer()
+      local fluidBufPtr = fluidBuf:get(1)
+
+      local localRange = fluid:localRange()
+
+      for idx in localRange:rowMajorIter() do
+         fluid:fill(fluidIdxr(idx), fluidPtr)
+         fluidBuf:fill(fluidBufIdxr(idx), fluidBufPtr)
+         fluidPtr[5] = fluidPtr[5] + fluidBufPtr[5]
       end
    end
 
