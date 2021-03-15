@@ -20,6 +20,8 @@ end
 local lower        = { 1./2.,  1./2.,  1./2.}
 local upper        = {-1./2., -1./2., -1./2.}
 local cells        = {32, 32, 32}
+local cells        = {4, 4, 4}
+
 local periodicDirs = {1, 2, 3}
 
 local function initElc (t, xn)
@@ -49,7 +51,7 @@ local function createField(grid, basis, numComponents)
    local fld = DataStruct.Field {
       onGrid        = grid,
       numComponents = numComponents,
-      ghost         = {1, 1},
+      ghost         = {2, 2},
       metaData = {
          polyOrder = basis:polyOrder(),
          basisType = basis:id()

@@ -49,7 +49,7 @@ local function createField(grid, basis, numComponents)
    local fld = DataStruct.Field {
       onGrid        = grid,
       numComponents = numComponents,
-      ghost         = {1, 1},
+      ghost         = {2, 2},
       metaData = {
          polyOrder = basis:polyOrder(),
          basisType = basis:id()
