@@ -54,6 +54,7 @@ function BraginskiiHeatConductionSource:createSolver(species, field)
       tau              = tbl.tau,
       calcTau          = tbl.calcTau,
       coulombLogarithm = tbl.coulombLogarithm,
+      coordinate       = tbl.coordinate,
    }
 end
 

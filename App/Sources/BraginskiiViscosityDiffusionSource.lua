@@ -55,6 +55,7 @@ function BraginskiiViscosityDiffusionSource:createSolver(species, field)
       calcTau          = tbl.calcTau,
       coulombLogarithm = tbl.coulombLogarithm,
       hasHeating       = tbl.hasHeating,
+      coordinate       = tbl.coordinate,
    }
 end
 
