@@ -44,6 +44,11 @@ function BraginskiiViscosityDiffusion:init(tbl)
 
    self._hasHeating = tbl.hasHeating ~= nil and tbl.hasHeating or false
 
+   self._coordinate = tbl.coordinate ~= nil and tbl.coordinate or "cartesian"
+   assert(self._coordinate=="cartesian" or
+          self._coordinate=="axisymmetric",
+          string.format("%s'coordinate' %s not recognized.", pfx, tbl._coordinate))
+
    assert(self._gasGamma==5./3., pfx .. " gasGamma must be 5/3.")
 end
 
@@ -91,6 +96,7 @@ function BraginskiiViscosityDiffusion:_forwardEuler(
 
    local emf = outFld[nFluids+1]
    local emfIdxr = emf:genIndexer()
+   local emfPtr = emf:get(1)
    local emfPtrP = emf:get(1)
    local emfPtrM = emf:get(1)
 
@@ -111,43 +117,122 @@ function BraginskiiViscosityDiffusion:_forwardEuler(
       local mass = self._mass[s]
       local charge = self._charge[s]
 
-      local localExtRange = fluid:localExtRange()
       local localRange = fluid:localRange()
 
       -- Compute rhs.
-      for idx in localRange:rowMajorIter() do
-         for d = 1, ndim do
+      if self._coordinate=="cartesian" then
+         for idx in localRange:rowMajorIter() do
+            for d = 1, ndim do
+               idx:copyInto(idxp)
+               idx:copyInto(idxm)
+               idxm[d] = idx[d]-1
+               idxp[d] = idx[d]+1
+              
+               fluid:fill(fluidIdxr(idx), fluidPtr)
+               fluid:fill(fluidIdxr(idxm), fluidPtrM)
+               fluid:fill(fluidIdxr(idxp), fluidPtrP)
+               emf:fill(emfIdxr(idxm), emfPtrM)
+               emf:fill(emfIdxr(idxp), emfPtrP)
+
+               local eta = calcEta(fluidPtr, emfPtr, mass, charge, gasGamma)
+               local etaM = calcEta(fluidPtrM, emfPtrM, mass, charge, gasGamma)
+               local etaP = calcEta(fluidPtrP, emfPtrP, mass, charge, gasGamma)
+
+               local etaMH = 0.5 * (eta+etaM)
+               local etaPH = 0.5 * (eta+etaP)
+
+               -- Compute momentum diffusion as grad(eta * grad(V)).
+               local dx = grid:dx(d)
+               for c=1,3 do
+                  fluidBufPtr[c] = (etaP*(fluidPtrP[c]-fluidPtr[c]) -
+                                    etaM*(fluidPtr[c]-fluidPtrM[c])) / (dx*dx)
+               end
+
+               -- Compute viscous heating as eta * |grad(V)|.
+               if self.hasHeating then
+                  local qVis = 0
+                  local eta = calcEta(fluidPtr, emfPtr, mass, charge, gasGamma, s)
+                  for c=1,3 do
+                     qVis = qVis + eta * ((fluidPtrP[c]-fluidPtrM[c]) / (2*dx))^2
+                  end
+                  fluidBufPtr[5] = qVis
+               end
+            end
+         end
+      elseif self._coordinate=="axisymmetric" then
+         local xc = Lin.Vec(ndim)
+         local xp = Lin.Vec(ndim)
+         local xm = Lin.Vec(ndim)
+         for idx in localRange:rowMajorIter() do
+            -- Radial diffusion.
+            local d = 1
+
+            local dr = grid:dx(1)
             idx:copyInto(idxp)
             idx:copyInto(idxm)
             idxm[d] = idx[d]-1
             idxp[d] = idx[d]+1
-           
             fluid:fill(fluidIdxr(idx), fluidPtr)
             fluid:fill(fluidIdxr(idxm), fluidPtrM)
             fluid:fill(fluidIdxr(idxp), fluidPtrP)
             emf:fill(emfIdxr(idxm), emfPtrM)
             emf:fill(emfIdxr(idxp), emfPtrP)
-
+            local eta = calcEta(fluidPtr, emfPtr, mass, charge, gasGamma)
             local etaM = calcEta(fluidPtrM, emfPtrM, mass, charge, gasGamma)
             local etaP = calcEta(fluidPtrP, emfPtrP, mass, charge, gasGamma)
 
-            -- Compute momentum diffusion as grad(eta * grad(V)).
-            local dx = grid:dx(d)
-            for c=1,3 do
-               fluidBufPtr[c] = (etaP*(fluidPtrP[c]-fluidPtr[c]) -
-                                 etaM*(fluidPtr[c]-fluidPtrM[c])) / (dx*dx)
-            end
+            grid:setIndex(idx)
+            grid:cellCenter(xc)
+            grid:setIndex(idxp)
+            grid:cellCenter(xp)
+            grid:setIndex(idxm)
+            grid:cellCenter(xm)
+            local r = xc[1]
+            local rp = xp[1]
+            local rm = xm[1]
 
-            -- Compute viscous heating as eta * |grad(V)|.
-            if self.hasHeating then
-               local qVis = 0
-               local eta = calcEta(fluidPtr, emfPtr, mass, charge, gasGamma, s)
-               for c=1,3 do
-                  qVis = qVis + eta * ((fluidPtrP[c]-fluidPtrM[c]) / (2*dx))^2
-               end
-               fluidBufPtr[5] = qVis
+            local rpH = 0.5 * (r+rp)
+            local rmH = 0.5 * (r+rm)
+            -- FIXME Is it better to compute eta with average B, etc.?
+            local etaMH = 0.5 * (eta+etaM)
+            local etaPH = 0.5 * (eta+etaP)
+
+            fluidBufPtr[1] = (etaPH*rpH*(fluidPtrP[1]-fluidPtr [1]) -
+                              etaMH*rmH*(fluidPtr [1]-fluidPtrM[1])) / (dr*dr*r) -
+                             eta*fluidPtr[1]/(r*r)
+            fluidBufPtr[2] = (etaPH*(rpH^2)*(fluidPtrP[2]/rp-fluidPtr [2]/r) -
+                              etaMH*(rmH^2)*(fluidPtr [2]/r -fluidPtrM[2]/rm)) / (dr*dr*r)
+            fluidBufPtr[3] = (etaPH*rpH*(fluidPtrP[3]-fluidPtr [3]) -
+                              etaMH*rmH*(fluidPtr [3]-fluidPtrM[3])) / (dr*dr*r)
+
+            -- Axial diffusion.
+            d=3
+
+            local dz = grid:dx(3)
+            idx:copyInto(idxp)
+            idx:copyInto(idxm)
+            idxm[d] = idx[d]-1
+            idxp[d] = idx[d]+1
+            fluid:fill(fluidIdxr(idx), fluidPtr)
+            fluid:fill(fluidIdxr(idxm), fluidPtrM)
+            fluid:fill(fluidIdxr(idxp), fluidPtrP)
+            emf:fill(emfIdxr(idxm), emfPtrM)
+            emf:fill(emfIdxr(idxp), emfPtrP)
+            local eta = calcEta(fluidPtr, emfPtr, mass, charge, gasGamma)
+            local etaM = calcEta(fluidPtrM, emfPtrM, mass, charge, gasGamma)
+            local etaP = calcEta(fluidPtrP, emfPtrP, mass, charge, gasGamma)
+
+            local etaMH = 0.5 * (eta+etaM)
+            local etaPH = 0.5 * (eta+etaP)
+
+            for c=1,3 do
+               fluidBufPtr[c] = fluidBufPtr[c] + 
+                                (etaPH*(fluidPtrP[c]-fluidPtr [c]) -
+                                 etaMH*(fluidPtr[c] -fluidPtrM[c])) / (dz*dz)
             end
          end
+      else
+         assert(false)
       end
    end
 
