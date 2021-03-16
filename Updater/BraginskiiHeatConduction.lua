@@ -66,7 +66,6 @@ function BraginskiiHeatConduction:_forwardEuler(
    local dtSuggested = GKYL_MAX_DOUBLE
    local status = true
 
-   -- Indices.
    local ndim = grid:ndim()
    local idxm = Lin.IntVec(grid:ndim())
    local idxp = Lin.IntVec(grid:ndim())
@@ -75,13 +74,14 @@ function BraginskiiHeatConduction:_forwardEuler(
    local emfIdxr = emf:genIndexer()
    local emfPtr = emf:get(1)
 
-   local heatFlux = inFld[nFluids+1]  -- This is really emfBuf
+   local heatFlux = inFld[nFluids+1]  -- This is really emfBuf.
    local heatFluxIdxr = heatFlux:genIndexer()
    local heatFluxPtr = heatFlux:get(1)
    local heatFluxPtrP = heatFlux:get(1)
    local heatFluxPtrM = heatFlux:get(1)
 
-   -- Comptue grad_para(T) ain internal cells.
+   -- A two-step scheme. Compute grad(T) and q at cell centers, then use these
+   -- cell-center q values to compute div(q) at cell centers.
    for s = 1, nFluids do
       local fluid = outFld[s]
       local fluidIdxr = fluid:genIndexer()
@@ -117,7 +117,7 @@ function BraginskiiHeatConduction:_forwardEuler(
             idxp[d] = idx[d]+1
 
             local __2delta = 0.5 / grid:dx(d)
-           
+
             fluidBuf:fill(fluidBufIdxr(idx), fluidBufPtr)
             fluidBuf:fill(fluidBufIdxr(idxm), fluidBufPtrM)
             fluidBuf:fill(fluidBufIdxr(idxp), fluidBufPtrP)
@@ -165,10 +165,10 @@ function BraginskiiHeatConduction:_forwardEuler(
          heatFluxPtr[1] = kappaPara*gradParaTx + kappaPerp*gradPerpTx
          heatFluxPtr[2] = kappaPara*gradParaTy + kappaPerp*gradPerpTy
          heatFluxPtr[3] = kappaPara*gradParaTz + kappaPerp*gradPerpTz
-      
+
+         -- FIXME: Nicer handling of terms that involve other species.
          if nFluids==2 and charge<0 then -- electron of a two-fluid plasma
             local elcPtr = fluidPtr
-            -- FIXME: Following indexing is uglier than ugly.
             local ion = outFld[2]
             local ionIdxr = ion:genIndexer()
             local ionPtr = ion:get(1)
@@ -244,7 +244,7 @@ function BraginskiiHeatConduction:_forwardEuler(
                   local rp = xp[1]
                   local rm = xm[1]
 
-                  divq = divq + 
+                  divq = divq +
                          (rp*heatFluxPtrP[d]-rm*heatFluxPtrM[d]) * __2delta / r
                elseif d==3 then
                   divq = divq + (heatFluxPtrP[d] - heatFluxPtrM[d]) * __2delta
