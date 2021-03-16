@@ -141,6 +141,7 @@ function BraginskiiHeatConduction:_forwardEuler(
          bx = bx / bmag
          by = by / bmag
          bz = bz / bmag
+         assert(bmag>0, "Zero B field detected!")
 
          local bDotGradTe = bx*fluidBufPtr[2] + by*fluidBufPtr[3] + bz*fluidBufPtr[4]
 
