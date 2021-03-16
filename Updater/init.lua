@@ -49,6 +49,7 @@ local ConstDiffusionSimple = require "Updater.ConstDiffusionSimple"
 local WavePropagation = require "Updater.WavePropagation"
 local BraginskiiForceAndHeating = require "Updater.BraginskiiForceAndHeating"
 local BraginskiiHeatConduction = require "Updater.BraginskiiHeatConduction"
+local BraginskiiViscosityDiffusion = require "Updater.BraginskiiViscosityDiffusion"
 
 return {
    Bc = Bc,
@@ -94,4 +95,5 @@ return {
    WavePropagation = WavePropagation,
    BraginskiiForceAndHeating = BraginskiiForceAndHeating,
    BraginskiiHeatConduction = BraginskiiHeatConduction,
+   BraginskiiViscosityDiffusion = BraginskiiViscosityDiffusion,
 }
