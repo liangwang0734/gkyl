@@ -10,6 +10,7 @@ local CollisionlessEmSource = require "App.Sources.CollisionlessEmSource"
 local TenMomentRelaxSource = require "App.Sources.TenMomentRelaxSource"
 local BraginskiiForceAndHeatingSource = require "App.Sources.BraginskiiForceAndHeatingSource"
 local BraginskiiHeatConductionSource = require "App.Sources.BraginskiiHeatConductionSource"
+local BraginskiiViscosityDiffusionSource = require "App.Sources.BraginskiiViscosityDiffusionSource"
 
 return {
    SourceBase = SourceBase,
@@ -17,4 +18,5 @@ return {
    TenMomentRelaxSource = TenMomentRelaxSource,
    BraginskiiForceAndHeatingSource = BraginskiiForceAndHeatingSource,
    BraginskiiHeatConductionSource = BraginskiiHeatConductionSource,
+   BraginskiiViscosityDiffusionSource = BraginskiiViscosityDiffusionSource,
 }

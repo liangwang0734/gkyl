@@ -1015,6 +1015,7 @@ return {
 	 TenMomentRelaxSource  = require "App.Sources.TenMomentRelaxSource",
     BraginskiiForceAndHeatingSource = require "App.Sources.BraginskiiForceAndHeatingSource",
     BraginskiiHeatConductionSource = require "App.Sources.BraginskiiHeatConductionSource",
+    BraginskiiViscosityDiffusionSource = require "App.Sources.BraginskiiViscosityDiffusionSource",
       }
    end
 }
