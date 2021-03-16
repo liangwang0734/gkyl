@@ -12,12 +12,11 @@ local Proto = require "Lib.Proto"
 local BraginskiiHeatConduction = Proto(UpdaterBase)
 
 function BraginskiiHeatConduction:init(tbl)
-   -- setup base object
    BraginskiiHeatConduction.super.init(self, tbl)
 
    local pfx = "Updater.BraginskiiHeatConduction: "
 
-   self._onGrid = assert(tbl.onGrid, pfx.." Must provide 'onGrid'.")
+   self._onGrid = assert(tbl.onGrid, pfx.."Must provide 'onGrid'.")
 
    self._gasGamma = assert(tbl.gasGamma, pfx .. "Must provide 'gasGamma'.")
 
@@ -27,7 +26,7 @@ function BraginskiiHeatConduction:init(tbl)
 
    self._charge = assert(tbl.charge, pfx .. "Must provide 'charge'.")
    assert(#self._mass==self._nFluids and #self._charge==self._nFluids,
-          pfx .. " Lengths of mass of charge must match nFluids.")
+          pfx .. "Lengths of mass of charge must match nFluids.")
 
    self._epsilon0 = assert(tbl.epsilon0, pfx .. "Must provide 'epsilon0'.")
 
@@ -44,9 +43,10 @@ function BraginskiiHeatConduction:init(tbl)
    self._coordinate = tbl.coordinate ~= nil and tbl.coordinate or "cartesian"
    assert(self._coordinate=="cartesian" or
           self._coordinate=="axisymmetric",
-          string.format("%s'coordinate' %s not recognized.", pfx, tbl._coordinate))
+          string.format("%s'coordinate' %s not recognized.",
+                        pfx, tbl._coordinate))
 
-   assert(self._gasGamma==5./3., pfx .. " gasGamma must be 5/3.")
+   assert(self._gasGamma==5./3., pfx .. "gasGamma must be 5/3.")
 end
 
 local temperature = function (q, gasGamma, mass)
@@ -80,8 +80,8 @@ function BraginskiiHeatConduction:_forwardEuler(
    local heatFluxPtrP = heatFlux:get(1)
    local heatFluxPtrM = heatFlux:get(1)
 
-   -- A two-step scheme. Compute grad(T) and q at cell centers, then use these
-   -- cell-center q values to compute div(q) at cell centers.
+   -- A two-step scheme. Compute grad(T) and q at cell centers, then compute
+   -- div(q) at a cell ceenter using q values at neighboring cell-center values.
    for s = 1, nFluids do
       local fluid = outFld[s]
       local fluidIdxr = fluid:genIndexer()
@@ -127,7 +127,7 @@ function BraginskiiHeatConduction:_forwardEuler(
 
       -- Compute q = q_para + q_perp
       --           = kappa_para*gradPara(T) + kappa_perp*gradPerp(T).
-      -- For electron in a two-fluid plasma, also add -0.71*pe*dVpara.
+      -- For the electron fluid in a two-fluid plasma, also add -0.71*pe*dVpara.
       for idx in localExt1Range:rowMajorIter() do
          emf:fill(emfIdxr(idx), emfPtr)
          fluid:fill(fluidIdxr(idx), fluidPtr)
@@ -143,7 +143,9 @@ function BraginskiiHeatConduction:_forwardEuler(
          bz = bz / bmag
          assert(bmag>0, "Zero B field detected!")
 
-         local bDotGradTe = bx*fluidBufPtr[2] + by*fluidBufPtr[3] + bz*fluidBufPtr[4]
+         local bDotGradTe = bx*fluidBufPtr[2] +
+                            by*fluidBufPtr[3] +
+                            bz*fluidBufPtr[4]
 
          local gradParaTx = bx * bDotGradTe
          local gradParaTy = bx * bDotGradTe
@@ -168,7 +170,7 @@ function BraginskiiHeatConduction:_forwardEuler(
          heatFluxPtr[3] = kappaPara*gradParaTz + kappaPerp*gradPerpTz
 
          -- FIXME: Nicer handling of terms that involve other species.
-         if nFluids==2 and charge<0 then -- electron of a two-fluid plasma
+         if nFluids==2 and charge<0 then
             local elcPtr = fluidPtr
             local ion = outFld[2]
             local ionIdxr = ion:genIndexer()
