@@ -159,8 +159,8 @@ function BraginskiiHeatConduction:_forwardEuler(
          local tau = self._tau[s]
          local Omega = math.abs(charge*bmag)/mass
          -- TODO Provide constant coefficients.
-         local kappaPara = n*T*tau/mass
-         local kappaPerp = n*T*tau/mass/(Omega*tau)^2
+         local kappaPara = -n*T*tau/mass
+         local kappaPerp = -n*T*tau/mass/(Omega*tau)^2
 
          heatFluxPtr[1] = kappaPara*gradParaTx + kappaPerp*gradPerpTx
          heatFluxPtr[2] = kappaPara*gradParaTy + kappaPerp*gradPerpTy
