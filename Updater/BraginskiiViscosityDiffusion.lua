@@ -252,9 +252,12 @@ function BraginskiiViscosityDiffusion:_forwardEuler(
          fluid:fill(fluidIdxr(idx), fluidPtr)
          fluidBuf:fill(fluidBufIdxr(idx), fluidBufPtr)
 
-         for c=1,4 do
+         local keOld = 0.5*(fluidPtr[2]^2+fluidPtr[3]^2+fluidPtr[4]^2)/fluidPtr[1]
+         for c=1,3 do
             fluidPtr[c] = fluidPtr[c] + fluidBufPtr[c]
          end
+         local keNew = 0.5*(fluidPtr[2]^2+fluidPtr[3]^2+fluidPtr[4]^2)/fluidPtr[1]
+         fluidPtr[5] = fluidPtr[5]+keNew-keOld+fluidBufPtr[5]
       end
    end
 
