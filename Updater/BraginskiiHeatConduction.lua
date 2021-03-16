@@ -273,7 +273,7 @@ function BraginskiiHeatConduction:_forwardEuler(
       for idx in localRange:rowMajorIter() do
          fluid:fill(fluidIdxr(idx), fluidPtr)
          fluidBuf:fill(fluidBufIdxr(idx), fluidBufPtr)
-         fluidPtr[5] = fluidPtr[5] + fluidBufPtr[5]
+         fluidPtr[5] = fluidPtr[5] - fluidBufPtr[5]
       end
    end
 
