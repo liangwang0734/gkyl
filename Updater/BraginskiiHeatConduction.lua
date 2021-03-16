@@ -41,6 +41,11 @@ function BraginskiiHeatConduction:init(tbl)
    assert(type(self._tau)=='table' or self.calcTau,
           pfx ..  "Must specify one of 'tau' and 'calcTau'.")
 
+   self._coordinate = tbl.coordinate ~= nil and tbl.coordinate or "cartesian"
+   assert(self._coordinate=="cartesian" or
+          self._coordinate=="axisymmetric",
+          string.format("%s'coordinate' %s not recognized.", pfx, tbl._coordinate))
+
    assert(self._gasGamma==5./3., pfx .. " gasGamma must be 5/3.")
 end
 
@@ -111,12 +116,12 @@ function BraginskiiHeatConduction:_forwardEuler(
             idxm[d] = idx[d]-1
             idxp[d] = idx[d]+1
 
-            local __2dx = 0.5 / grid:dx(d)
+            local __2delta = 0.5 / grid:dx(d)
            
             fluidBuf:fill(fluidBufIdxr(idx), fluidBufPtr)
             fluidBuf:fill(fluidBufIdxr(idxm), fluidBufPtrM)
             fluidBuf:fill(fluidBufIdxr(idxp), fluidBufPtrP)
-            fluidBufPtr[d+1] = (fluidBufPtrP[5] - fluidBufPtrM[5]) * __2dx
+            fluidBufPtr[d+1] = (fluidBufPtrP[5] - fluidBufPtrM[5]) * __2delta
          end
       end
 
@@ -185,27 +190,71 @@ function BraginskiiHeatConduction:_forwardEuler(
       end
 
       -- Compute div(q).
-      for idx in localRange:rowMajorIter() do
-         fluid:fill(fluidIdxr(idx), fluidPtr)
-         fluidBuf:fill(fluidBufIdxr(idx), fluidBufPtr)
-         heatFlux:fill(heatFluxIdxr(idx), heatFluxPtr)
+      if self._coordinate=="cartesian" then
+         for idx in localRange:rowMajorIter() do
+            fluid:fill(fluidIdxr(idx), fluidPtr)
+            fluidBuf:fill(fluidBufIdxr(idx), fluidBufPtr)
+            heatFlux:fill(heatFluxIdxr(idx), heatFluxPtr)
 
-         local divq = 0
-         for d = 1, ndim do
-            idx:copyInto(idxp)
-            idx:copyInto(idxm)
-            idxm[d] = idx[d]-1
-            idxp[d] = idx[d]+1
+            local divq = 0
+            for d = 1, ndim do
+               idx:copyInto(idxp)
+               idx:copyInto(idxm)
+               idxm[d] = idx[d]-1
+               idxp[d] = idx[d]+1
 
-            heatFlux:fill(heatFluxIdxr(idxp), heatFluxPtrP)
-            heatFlux:fill(heatFluxIdxr(idxm), heatFluxPtrM)
+               heatFlux:fill(heatFluxIdxr(idxp), heatFluxPtrP)
+               heatFlux:fill(heatFluxIdxr(idxm), heatFluxPtrM)
 
-            local __2dx = 0.5 / grid:dx(d)
+               local __2delta = 0.5 / grid:dx(d)
 
-            divq = divq + (heatFluxPtrP[d] - heatFluxPtrM[d]) * __2dx
+               divq = divq + (heatFluxPtrP[d] - heatFluxPtrM[d]) * __2delta
+            end
+
+           fluidBufPtr[1] = divq
          end
+      elseif self._coordinate=="axisymmetric" then
+         local xc = Lin.Vec(ndim)
+         local xp = Lin.Vec(ndim)
+         local xm = Lin.Vec(ndim)
+         for idx in localRange:rowMajorIter() do
+            fluid:fill(fluidIdxr(idx), fluidPtr)
+            fluidBuf:fill(fluidBufIdxr(idx), fluidBufPtr)
+            heatFlux:fill(heatFluxIdxr(idx), heatFluxPtr)
 
-        fluidBufPtr[1] = divq
+            local divq = 0
+            for _,d in ipairs({1,3}) do
+               idx:copyInto(idxp)
+               idx:copyInto(idxm)
+               idxm[d] = idx[d]-1
+               idxp[d] = idx[d]+1
+
+               heatFlux:fill(heatFluxIdxr(idxp), heatFluxPtrP)
+               heatFlux:fill(heatFluxIdxr(idxm), heatFluxPtrM)
+
+               local __2delta = 0.5 / grid:dx(d)
+               if d==1 then
+                  grid:setIndex(idx)
+                  grid:cellCenter(xc)
+                  grid:setIndex(idxp)
+                  grid:cellCenter(xp)
+                  grid:setIndex(idxm)
+                  grid:cellCenter(xm)
+                  local r = xc[1]
+                  local rp = xp[1]
+                  local rm = xm[1]
+
+                  divq = divq + 
+                         (rp*heatFluxPtrP[d]-rm*heatFluxPtrM[d]) * __2delta / r
+               elseif d==3 then
+                  divq = divq + (heatFluxPtrP[d] - heatFluxPtrM[d]) * __2delta
+               else
+                  assert(false)
+               end
+            end
+
+           fluidBufPtr[1] = divq
+         end
       end
    end
 
