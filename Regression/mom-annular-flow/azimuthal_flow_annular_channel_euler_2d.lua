@@ -15,6 +15,7 @@ local vtheta__cs = 0.1
 local r_inn = 0.5
 local r_out = 1.5
 local Nx, Ny = 100, 100
+local cfl = 1
 local decompCuts = {1, 1}
 
 local cs0 = math.sqrt(gasGamma*p0/rho0)
@@ -33,8 +34,8 @@ local init = function (t, xn)
    local rho = rho0
    local vx, vy, vz = 0, 0, 0
    if r < r_out and r > r_inn then
-      local a = (r - r_inn) / (r_out-r_inn)
       -- Make the azimuthal flow velocity to vanish at inner and outer walls.
+      local a = (r - r_inn) / (r_out-r_inn)
       local vtheta = vtheta0 * 0.5 * (math.cos(2 * math.pi * (a + 0.5)) + 1)
       vx = -vtheta * y / r
       vy = vtheta * x / r
@@ -89,7 +90,7 @@ log("%30s = %g", "tEnd", tEnd)
 log("%30s = %g", "nFrame", nFrame)
 
 --------------------------------------------------------------------------------
-app = Moments.App {
+local app = Moments.App {
    logToFile = true,
 
    tEnd = tEnd,
@@ -107,8 +108,9 @@ app = Moments.App {
       equationInv = Euler { gasGamma = gasGamma, numericalFlux="lax" },
       forceInv = false,
       init = init,
-      bcx = { Moments.Species.bcCopy, Moments.Species.bcCopy },
-      bcy = { Moments.Species.bcCopy, Moments.Species.bcCopy },
+      -- Dummy BCs for outer boundaries. 
+      bcx = { {}, {} },
+      bcy = { {}, {} },
       hasSsBnd = true,
       inOutFunc = embedded_boundary_mask_func,
       ssBc = { embedded_bc },
