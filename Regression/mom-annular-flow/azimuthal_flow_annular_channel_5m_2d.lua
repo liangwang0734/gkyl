@@ -175,7 +175,7 @@ local embedded_bc_fluid = {
 local embedded_bc_elc = embedded_bc_fluid
 local embedded_bc_ion = embedded_bc_fluid
 
-local embedded_bc_field = Moments.Field.bcWall
+local embedded_bc_field = Moments.Field.bcReflect
 
 -- CREATE AND RUNNING THE APP --------------------------------------------------
 
@@ -197,9 +197,7 @@ local app = Moments.App {
       equationInv = Euler { gasGamma = gasGamma, numericalFlux="lax" },
       forceInv = false,
       init = init_elc,
-      -- Dummy BCs for outer boundaries. 
-      bcx = { {}, {} },
-      bcy = { {}, {} },
+      bcx = { {}, {} }, bcy = { {}, {} }, -- Dummy BCs for outer boundaries. 
       hasSsBnd = true,
       inOutFunc = embedded_boundary_mask_func,
       ssBc = { embedded_bc_elc },
@@ -211,9 +209,7 @@ local app = Moments.App {
       equationInv = Euler { gasGamma = gasGamma, numericalFlux="lax" },
       forceInv = false,
       init = init_ion,
-      -- Dummy BCs for outer boundaries. 
-      bcx = { {}, {} },
-      bcy = { {}, {} },
+      bcx = { {}, {} }, bcy = { {}, {} }, -- Dummy BCs for outer boundaries. 
       hasSsBnd = true,
       inOutFunc = embedded_boundary_mask_func,
       ssBc = { embedded_bc_ion },
@@ -221,24 +217,17 @@ local app = Moments.App {
 
    field = Moments.Field {
       epsilon0 = epsilon0, mu0 = mu0,
-      init = function (t, xn)
-         local r, theta, z = xn[1], xn[2], xn[3]
-         local Er = Er0
-         local Et = 0
-         local Ez = 0
-         local Br = 0
-         local Bt = 0
-         local Bz = 0
-         return Er, Et, Ez, Br, Bt, Bz
-      end,
-      bcx = { {bcRadialEmfConductingWall}, {bcRadialEmfConductingWall} },
+      init = init_field,
+      bcx = { {}, {} }, bcy = { {}, {} }, -- Dummy BCs for outer boundaries. 
+      hasSsBnd = true,
+      inOutFunc = embedded_boundary_mask_func,
+      ssBc = { embedded_bc_field },
    },
 
    emSource = Moments.CollisionlessEmSource {
       species = {"elc", "ion"},
       timeStepper = "time-centered",
    },
-
 }
 
 app:run()
