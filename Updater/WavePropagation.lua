@@ -400,6 +400,14 @@ function WavePropagation:_advance(tCurr, inFld, outFld)
                -- copy waves data for use in limiters
                copy(wavesSlice[i], waves:data(), sizeof("double")*meqn*mwave)
                copy(speedsSlice[i], s:data(), sizeof("double")*mwave)
+            else
+               -- FIXME: Following are not computationally needed since zero
+               -- limiters would set them to zero at stair-stepped boundaryies.
+               -- But without them, in the present limitWaves algorithm, invalid
+               -- wave dot products might be generated when running in parallel
+               -- and crashes the lua execution.
+               fill(wavesSlice[i], sizeof("double")*meqn*mwave)
+               fill(speedsSlice[i], sizeof("double")*mwave)
             end
          end
 
